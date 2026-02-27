@@ -1,0 +1,5 @@
+dist/
+baton-appstoreconnect
+.envrc
+.env
+*.p8
