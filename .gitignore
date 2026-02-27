@@ -1,5 +1,5 @@
 dist/
-baton-appstoreconnect
+/baton-appstoreconnect
 .envrc
 .env
 *.p8
