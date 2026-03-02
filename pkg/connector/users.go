@@ -3,6 +3,7 @@ package connector
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
@@ -29,7 +30,7 @@ func newUserResource(user client.User) (*v2.Resource, error) {
 		"username":        user.Attributes.Username,
 		"first_name":      user.Attributes.FirstName,
 		"last_name":       user.Attributes.LastName,
-		"roles":           user.Attributes.Roles,
+		"roles":           strings.Join(user.Attributes.Roles, ","),
 		"all_apps_visible": user.Attributes.AllAppsVisible,
 	}
 
