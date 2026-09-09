@@ -25,3 +25,20 @@ var roleResourceType = &v2.ResourceType{
 	DisplayName: "Role",
 	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
 }
+
+// betaGroupResourceType is for TestFlight beta groups. Membership of a beta
+// group is what grants a tester access to an app's builds.
+var betaGroupResourceType = &v2.ResourceType{
+	Id:          "beta_group",
+	DisplayName: "Beta Group",
+	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_GROUP},
+}
+
+// betaTesterResourceType is for TestFlight beta testers. These are distinct
+// from App Store Connect users: a tester is an email address invited to test
+// builds, and may not have an App Store Connect account at all.
+var betaTesterResourceType = &v2.ResourceType{
+	Id:          "beta_tester",
+	DisplayName: "Beta Tester",
+	Traits:      []v2.ResourceType_Trait{v2.ResourceType_TRAIT_USER},
+}

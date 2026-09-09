@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/conductorone/baton-appstoreconnect/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/pagination"
 	resourceSdk "github.com/conductorone/baton-sdk/pkg/types/resource"
-	"github.com/conductorone/baton-appstoreconnect/pkg/client"
 )
 
 type userBuilder struct {
@@ -27,10 +27,10 @@ func newUserResource(user client.User) (*v2.Resource, error) {
 	}
 
 	profile := map[string]interface{}{
-		"username":        user.Attributes.Username,
-		"first_name":      user.Attributes.FirstName,
-		"last_name":       user.Attributes.LastName,
-		"roles":           strings.Join(user.Attributes.Roles, ","),
+		"username":         user.Attributes.Username,
+		"first_name":       user.Attributes.FirstName,
+		"last_name":        user.Attributes.LastName,
+		"roles":            strings.Join(user.Attributes.Roles, ","),
 		"all_apps_visible": user.Attributes.AllAppsVisible,
 	}
 

@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os"
 
+	cfg "github.com/conductorone/baton-appstoreconnect/pkg/config"
+	"github.com/conductorone/baton-appstoreconnect/pkg/connector"
 	"github.com/conductorone/baton-sdk/pkg/config"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
 	"github.com/conductorone/baton-sdk/pkg/field"
 	"github.com/conductorone/baton-sdk/pkg/types"
-	cfg "github.com/conductorone/baton-appstoreconnect/pkg/config"
-	"github.com/conductorone/baton-appstoreconnect/pkg/connector"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
 	"go.uber.org/zap"
 )

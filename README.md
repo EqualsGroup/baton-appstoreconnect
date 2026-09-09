@@ -1,6 +1,6 @@
 # `baton-appstoreconnect`
 
-`baton-appstoreconnect` is a connector for Apple App Store Connect built using the [Baton SDK](https://github.com/conductorone/baton-sdk). It communicates with the [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi) to sync data about users, apps, and role assignments.
+`baton-appstoreconnect` is a connector for Apple App Store Connect built using the [Baton SDK](https://github.com/conductorone/baton-sdk). It communicates with the [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi) to sync data about users, apps, role assignments, and TestFlight beta groups and testers.
 
 Check out [Baton](https://github.com/conductorone/baton) to learn more about the project in general.
 
@@ -53,6 +53,8 @@ baton resources
 | User | App Store Connect users with their email, name, and assigned roles. |
 | App | Apps in the account, with name, bundle ID, and SKU. Each app exposes an `access` entitlement. |
 | Role | A single resource representing the App Store Connect account. Exposes one entitlement per role (Admin, Developer, App Manager, etc.). |
+| Beta Group | TestFlight beta groups across all apps, internal and external. Each group exposes a `member` entitlement and carries its app ID, public link and build-access settings in its profile. |
+| Beta Tester | TestFlight beta testers, keyed by the email address invited to test. Distinct from App Store Connect users: a tester usually has no App Store Connect account. |
 
 ## Provisioning
 
@@ -61,6 +63,16 @@ baton resources
 | Delete | User | Remove a user from App Store Connect. |
 | Grant | App Access | Users with `allAppsVisible` or explicit app visibility get app access grants. |
 | Grant | Role | Each user's role assignments are synced as grants on the Role resource. |
+| Grant | Beta Group `member` | Adds an existing beta tester to a TestFlight beta group. This is what triggers the TestFlight invitation email. |
+| Revoke | Beta Group `member` | Removes a beta tester from a beta group. Other group memberships are left intact. |
+| Delete | Beta Tester | Removes a beta tester from TestFlight entirely, across every group and app. |
+
+### TestFlight notes
+
+- Beta groups are listed globally via `/v1/betaGroups?include=app`, so groups from every app appear in a single sync rather than per-app.
+- The API key needs a role that can manage TestFlight (Admin or App Manager). A Developer-role key can read beta groups but cannot change membership.
+- Inviting a brand new tester (one that does not exist in TestFlight yet) is not exposed as a Baton action. `client.CreateBetaTester` and `client.FindBetaTesterByEmail` implement it at the client layer, ready to be wired to the SDK's account-provisioning interface.
+- Builds, build submissions and beta app review are out of scope: they are release-management, not access.
 
 ## Contributing, Support and Issues
 

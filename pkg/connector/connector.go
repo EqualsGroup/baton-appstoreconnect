@@ -4,10 +4,10 @@ import (
 	"context"
 	"io"
 
+	"github.com/conductorone/baton-appstoreconnect/pkg/client"
 	v2 "github.com/conductorone/baton-sdk/pb/c1/connector/v2"
 	"github.com/conductorone/baton-sdk/pkg/annotations"
 	"github.com/conductorone/baton-sdk/pkg/connectorbuilder"
-	"github.com/conductorone/baton-appstoreconnect/pkg/client"
 )
 
 // Connector implements the baton connector interface for App Store Connect.
@@ -22,6 +22,8 @@ func (c *Connector) ResourceSyncers(_ context.Context) []connectorbuilder.Resour
 		newUserBuilder(c.client),
 		newAppBuilder(c.client),
 		newRoleBuilder(c.client),
+		newBetaGroupBuilder(c.client),
+		newBetaTesterBuilder(c.client),
 	}
 }
 
@@ -35,7 +37,7 @@ func (c *Connector) Asset(_ context.Context, _ *v2.AssetRef) (string, io.ReadClo
 func (c *Connector) Metadata(_ context.Context) (*v2.ConnectorMetadata, error) {
 	return &v2.ConnectorMetadata{
 		DisplayName: "App Store Connect",
-		Description: "Connector for Apple App Store Connect. Syncs users, apps, roles, and app-specific access.",
+		Description: "Connector for Apple App Store Connect. Syncs users, apps, roles, app-specific access, and TestFlight beta groups and testers.",
 	}, nil
 }
 
