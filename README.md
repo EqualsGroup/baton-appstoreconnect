@@ -44,6 +44,18 @@ baton-appstoreconnect
 baton resources
 ```
 
+Alternatively, supply the complete PEM contents directly with `--private-key` or
+`BATON_PRIVATE_KEY`:
+
+```bash
+unset BATON_PRIVATE_KEY_PATH
+export BATON_PRIVATE_KEY="$(cat /path/to/AuthKey_XXXXXXXX.p8)"
+baton-appstoreconnect
+```
+
+Exactly one of `private-key-path` or `private-key` must be set. The PEM value
+must include its header, footer, and actual line breaks.
+
 ## Data Model
 
 `baton-appstoreconnect` syncs the following resources:
@@ -97,7 +109,8 @@ Available Commands:
 Flags:
       --issuer-id string           required: App Store Connect API Issuer ID ($BATON_ISSUER_ID)
       --key-id string              required: App Store Connect API Key ID ($BATON_KEY_ID)
-      --private-key-path string    required: Path to the .p8 private key file ($BATON_PRIVATE_KEY_PATH)
+      --private-key-path string    Path to the .p8 private key file ($BATON_PRIVATE_KEY_PATH)
+      --private-key string         PEM-encoded .p8 private key contents ($BATON_PRIVATE_KEY)
       --client-id string           The client ID used to authenticate with ConductorOne ($BATON_CLIENT_ID)
       --client-secret string       The client secret used to authenticate with ConductorOne ($BATON_CLIENT_SECRET)
   -f, --file string                The path to the c1z file to sync with ($BATON_FILE) (default "sync.c1z")
