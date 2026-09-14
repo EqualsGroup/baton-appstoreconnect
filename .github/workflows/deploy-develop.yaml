@@ -1,0 +1,99 @@
+name: Deploy To Develop (ECS worker)
+
+# App Store Connect ConductorOne baton. Unlike baton-em-staff (CodeDeploy
+# blue/green behind an ALB), this runs as a standalone egress-only ECS worker
+# (terraform-live ecs-worker, deployment_controller = ECS, no ALB / no
+# CodeDeploy). So the build half reuses build-docker-image-ecs-go, but the
+# deploy is a plain rolling update-service — there is no @codedeploy role and no
+# reusable Go worker-deploy workflow in em-github-action-workflows.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_vulnerability_scanner:
+        description: "Run Vulnerability Scanner ECR / Inspector"
+        required: true
+        default: true
+        type: boolean
+  pull_request:
+    branches: [main]
+    types: [closed]
+    paths-ignore:
+      - ".agents/**"
+      - ".claude/**"
+      - "**/*.md"
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  # Service identity (ECR repo / codebuild role / build secret / ECS names are
+  # keyed on this), NOT the repo name.
+  SERVICE: app-store-connect
+
+jobs:
+  build-docker-images:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    uses: EqualsGroup/em-github-action-workflows/.github/workflows/build-docker-image-ecs-go.yaml@develop
+    with:
+      service: app-store-connect
+      run_vulnerability_scanner: ${{ fromJSON(github.event.inputs.run_vulnerability_scanner || 'true') }}
+    secrets: inherit
+
+  deploy-develop:
+    needs: [build-docker-images]
+    # Self-hosted RunsOn runner: the @codebuild role trusts the runner's EC2
+    # instance role (codebuild_identifiers_ecs), so configure-aws-credentials
+    # role-chains into it — this role does NOT trust the GitHub OIDC provider,
+    # so a GitHub-hosted runner + id-token would fail.
+    runs-on:
+      - runs-on=${{ github.run_id }}-${{ github.run_attempt }}
+      - image=ubuntu24-full-x64
+    concurrency:
+      group: deployment-develop
+      cancel-in-progress: false
+    env:
+      AWS_REGION: eu-west-2
+      # develop-api account
+      DEPLOY_ROLE: "arn:aws:iam::950454599502:role/FairFXGroup@app-store-connect@codebuild"
+      CLUSTER: app-store-connect-develop-cluster
+      ECS_SERVICE: app-store-connect-worker
+      TASK_FAMILY: app-store-connect-develop-worker
+      CONTAINER: app-store-connect-worker
+    steps:
+      - uses: runs-on/action@v2
+
+      - name: Assume develop deploy role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: app-store-connect-deploy-${{ github.run_id }}
+
+      # The worker task-definition is owned by terraform-live (ecs-worker), which
+      # carries ignore_changes on task_definition/container_definitions so CI owns
+      # the running revision. Pull the live definition, swap only the image, and
+      # register a new revision — no committed template to drift from TF.
+      - name: Download live task definition
+        run: |
+          aws ecs describe-task-definition --task-definition "$TASK_FAMILY" \
+            --query 'taskDefinition | {family:family, taskRoleArn:taskRoleArn, executionRoleArn:executionRoleArn, networkMode:networkMode, containerDefinitions:containerDefinitions, requiresCompatibilities:requiresCompatibilities, cpu:cpu, memory:memory}' \
+            > task-definition.json
+
+      - name: Render new image
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER }}
+          image: ${{ needs.build-docker-images.outputs.IMAGE }}:${{ needs.build-docker-images.outputs.TAG }}
+
+      # No codedeploy-* inputs => standard ECS rolling deployment (update-service).
+      - name: Deploy (rolling update)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.CLUSTER }}
+          wait-for-service-stability: true
