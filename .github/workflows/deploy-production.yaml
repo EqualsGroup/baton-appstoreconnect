@@ -1,0 +1,72 @@
+name: Deploy To Production (ECS worker)
+
+# Promotes an already-built image (internal-shared ECR, pushed by the develop
+# pipeline and pullable cross-account) to the production-api worker. No rebuild:
+# the same immutable tag that ran on develop is deployed to prod. Gated by the
+# `production` GitHub environment (configure required reviewers on it).
+#
+# Same worker shape as develop: standalone ECS worker, no ALB / no CodeDeploy,
+# rolling update-service. Requires the production-api runtime (cluster + worker
+# + secret) to exist in terraform-live first.
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to promote (7-char short SHA already in ECR, e.g. from a develop build)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-production:
+    runs-on:
+      - runs-on=${{ github.run_id }}-${{ github.run_attempt }}
+      - image=ubuntu24-full-x64
+    environment: production
+    concurrency:
+      group: deployment-production
+      cancel-in-progress: false
+    env:
+      AWS_REGION: eu-west-2
+      # production-api (micro-production) account
+      DEPLOY_ROLE: "arn:aws:iam::387356466752:role/FairFXGroup@app-store-connect@codebuild"
+      # internal-shared ECR (cross-account pull)
+      IMAGE_REPO: "232181100491.dkr.ecr.eu-west-2.amazonaws.com/fairfxgroup/app-store-connect/app-store-connect"
+      CLUSTER: app-store-connect-production-cluster
+      ECS_SERVICE: app-store-connect-worker
+      TASK_FAMILY: app-store-connect-production-worker
+      CONTAINER: app-store-connect-worker
+    steps:
+      - uses: runs-on/action@v2
+
+      - name: Assume production deploy role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: app-store-connect-prod-deploy-${{ github.run_id }}
+
+      - name: Download live task definition
+        run: |
+          aws ecs describe-task-definition --task-definition "$TASK_FAMILY" \
+            --query 'taskDefinition | {family:family, taskRoleArn:taskRoleArn, executionRoleArn:executionRoleArn, networkMode:networkMode, containerDefinitions:containerDefinitions, requiresCompatibilities:requiresCompatibilities, cpu:cpu, memory:memory}' \
+            > task-definition.json
+
+      - name: Render promoted image
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER }}
+          image: ${{ env.IMAGE_REPO }}:${{ inputs.image_tag }}
+
+      - name: Deploy (rolling update)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.CLUSTER }}
+          wait-for-service-stability: true

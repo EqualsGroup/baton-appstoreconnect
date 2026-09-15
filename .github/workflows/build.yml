@@ -1,0 +1,28 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  build:
+    uses: EqualsGroup/em-github-action-workflows/.github/workflows/build-go.yaml@develop
+    with:
+      # Service identity is app-store-connect (the ECR repo / codebuild role /
+      # build secret are keyed on it) — NOT the repo name (baton-appstoreconnect).
+      service: app-store-connect
+      go_version: "1.25"
+      run_vulnerability_scanner: true
+      build_command: "go build -o baton-appstoreconnect ./cmd/baton-appstoreconnect"
+      test_command: "go test -race ./..."
+    secrets: inherit
