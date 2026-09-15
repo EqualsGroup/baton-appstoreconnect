@@ -7,6 +7,7 @@ type AppStoreConnect struct {
 	IssuerID       string `mapstructure:"issuer-id"`
 	KeyID          string `mapstructure:"key-id"`
 	PrivateKeyPath string `mapstructure:"private-key-path"`
+	PrivateKey     string `mapstructure:"private-key"`
 }
 
 func (c *AppStoreConnect) findFieldByTag(tagValue string) (any, bool) {

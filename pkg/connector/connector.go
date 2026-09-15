@@ -53,8 +53,8 @@ func (c *Connector) Validate(ctx context.Context) (annotations.Annotations, erro
 }
 
 // New returns a new instance of the App Store Connect connector.
-func New(ctx context.Context, issuerID, keyID, privateKeyPath string) (*Connector, error) {
-	cl, err := client.New(ctx, issuerID, keyID, privateKeyPath)
+func New(ctx context.Context, issuerID, keyID string, keyData []byte) (*Connector, error) {
+	cl, err := client.New(ctx, issuerID, keyID, keyData)
 	if err != nil {
 		return nil, err
 	}

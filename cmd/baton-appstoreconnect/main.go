@@ -50,7 +50,16 @@ func getConnector[T field.Configurable](ctx context.Context, c T) (types.Connect
 	keyID := c.GetString(cfg.KeyID.FieldName)
 	privateKeyPath := c.GetString(cfg.PrivateKeyPath.FieldName)
 
-	cb, err := connector.New(ctx, issuerID, keyID, privateKeyPath)
+	keyData := []byte(c.GetString(cfg.PrivateKey.FieldName))
+	if privateKeyPath != "" {
+		var err error
+		keyData, err = os.ReadFile(privateKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read private key file %s: %w", privateKeyPath, err)
+		}
+	}
+
+	cb, err := connector.New(ctx, issuerID, keyID, keyData)
 	if err != nil {
 		l.Error("error creating connector", zap.Error(err))
 		return nil, err

@@ -7,7 +7,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -38,12 +37,7 @@ type Client struct {
 }
 
 // New creates a new App Store Connect API client.
-func New(_ context.Context, issuerID, keyID, privateKeyPath string) (*Client, error) {
-	keyData, err := os.ReadFile(privateKeyPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read private key file %s: %w", privateKeyPath, err)
-	}
-
+func New(_ context.Context, issuerID, keyID string, keyData []byte) (*Client, error) {
 	privateKey, err := parseP8PrivateKey(keyData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse private key: %w", err)

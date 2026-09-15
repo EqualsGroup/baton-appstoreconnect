@@ -23,12 +23,21 @@ var (
 		"private-key-path",
 		field.WithDisplayName("Private Key Path"),
 		field.WithDescription("Path to the .p8 private key file for App Store Connect API"),
-		field.WithRequired(true),
 	)
 
-	ConfigurationFields = []field.SchemaField{IssuerID, KeyID, PrivateKeyPath}
+	PrivateKey = field.StringField(
+		"private-key",
+		field.WithDisplayName("Private Key"),
+		field.WithDescription("PEM-encoded .p8 private key contents for App Store Connect API"),
+		field.WithIsSecret(true),
+	)
 
-	FieldRelationships = []field.SchemaFieldRelationship{}
+	ConfigurationFields = []field.SchemaField{IssuerID, KeyID, PrivateKeyPath, PrivateKey}
+
+	FieldRelationships = []field.SchemaFieldRelationship{
+		field.FieldsAtLeastOneUsed(PrivateKeyPath, PrivateKey),
+		field.FieldsMutuallyExclusive(PrivateKeyPath, PrivateKey),
+	}
 )
 
 var Config = field.NewConfiguration(
